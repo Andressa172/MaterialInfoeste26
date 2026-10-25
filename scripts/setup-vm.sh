@@ -1,7 +1,13 @@
 #!/usr/bin/env bash
 # Roda DENTRO da VM Ubuntu da OCI. Instala Docker (pra buildar a imagem do
-# site), k3s (Kubernetes leve, já vem com Traefik como Ingress Controller)
-# e o ArgoCD.
+# site) e o k3s, já configurado pro perfil de recursos de uma VM Always
+# Free pequena (1GB de RAM):
+#   - Traefik (Ingress Controller) desligado: não cabe de forma estável
+#     nessa VM; a aplicação é exposta direto via Service NodePort.
+#   - Range de NodePort ampliado pra incluir a porta 80 (o padrão do
+#     Kubernetes é 30000-32767).
+# Depois deste script, rode scripts/install-gitops-poller.sh pra ligar o
+# "GitOps leve" que mantém o cluster sincronizado com este repositório.
 set -euo pipefail
 
 echo "==> Instalando Docker..."
@@ -10,27 +16,20 @@ if ! command -v docker >/dev/null; then
   sudo usermod -aG docker "$(whoami)"
 fi
 
+echo "==> Configurando k3s (Traefik desligado, NodePort 80 liberado)..."
+sudo mkdir -p /etc/rancher/k3s
+printf 'disable:\n  - traefik\nkube-apiserver-arg:\n  - service-node-port-range=80-32767\n' \
+  | sudo tee /etc/rancher/k3s/config.yaml > /dev/null
+
 echo "==> Instalando k3s..."
 curl -sfL https://get.k3s.io | sh -
 
 echo "==> Aguardando node ficar Ready..."
-sudo k3s kubectl wait --for=condition=Ready node --all --timeout=120s
-
-echo "==> Criando namespace do argocd..."
-sudo k3s kubectl create namespace argocd --dry-run=client -o yaml | sudo k3s kubectl apply -f -
-
-echo "==> Instalando ArgoCD..."
-sudo k3s kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
-
-echo "==> Aguardando pods do ArgoCD..."
-sudo k3s kubectl wait --for=condition=Ready pods --all -n argocd --timeout=300s || true
+sudo k3s kubectl wait --for=condition=Ready node --all --timeout=180s
 
 echo
 echo "k3s instalado. kubeconfig em: /etc/rancher/k3s/k3s.yaml"
 echo "Para usar sem sudo: sudo cp /etc/rancher/k3s/k3s.yaml ~/.kube/config && sudo chown \$(id -u):\$(id -g) ~/.kube/config"
 echo
-echo "Senha inicial do ArgoCD (admin):"
-echo "  sudo k3s kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d; echo"
-echo
-echo "Para acessar a UI do ArgoCD (opcional, via port-forward):"
-echo "  sudo k3s kubectl -n argocd port-forward svc/argocd-server 8080:443 --address 0.0.0.0"
+echo "Próximo passo: rode scripts/install-gitops-poller.sh pra clonar o repositório"
+echo "e ligar o GitOps leve (git pull + kubectl apply a cada 20s)."
