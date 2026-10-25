@@ -1,0 +1,43 @@
+# Workload: Deployment -> gerencia um ReplicaSet -> gerencia os Pods.
+# Trocar a tag da imagem aqui (e dar git push) é o gatilho do GitOps: o ArgoCD
+# detecta a mudança neste arquivo e aplica no cluster automaticamente.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: infoeste26-site
+  namespace: infoeste26
+  labels:
+    app: infoeste26-site
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: infoeste26-site
+  template:
+    metadata:
+      labels:
+        app: infoeste26-site
+    spec:
+      containers:
+        - name: site
+          # TODO: troque SEU_USUARIO_DOCKERHUB pelo seu usuário do Docker Hub (ou GHCR)
+          image: SEU_USUARIO_DOCKERHUB/infoeste26-site:v1
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "32Mi"
+            limits:
+              cpu: "200m"
+              memory: "64Mi"
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 2
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5

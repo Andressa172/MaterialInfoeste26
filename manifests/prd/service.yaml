@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: infoeste26-site
+  namespace: infoeste26
+spec:
+  selector:
+    app: infoeste26-site
+  ports:
+    - port: 80
+      targetPort: 80

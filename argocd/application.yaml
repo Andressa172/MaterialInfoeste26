@@ -1,0 +1,22 @@
+# GitOps: o ArgoCD fica "olhando" este repositório (branch master, pasta manifests/prd).
+# Qualquer commit nessa pasta é detectado e sincronizado automaticamente no cluster.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: infoeste26-site
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/Andressa172/MaterialInfoeste26.git
+    targetRevision: master
+    path: manifests/prd
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: infoeste26
+  syncPolicy:
+    automated:
+      prune: true     # remove do cluster o que for removido do git
+      selfHeal: true   # desfaz mudanças manuais feitas direto no cluster
+    syncOptions:
+      - CreateNamespace=true
