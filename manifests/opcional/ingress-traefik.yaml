@@ -1,0 +1,26 @@
+# Fluxo "de livro-texto": Browser -> DuckDNS -> IP público da VM -> Traefik
+# (Ingress Controller nativo do k3s) -> Service infoeste26-site -> Pods.
+#
+# NOTA: este arquivo fica fora de manifests/prd (não é aplicado pelo
+# gitops-poller). Na VM pequena usada nesta demo o Traefik não roda de
+# forma estável, então o Service já expõe a aplicação direto via NodePort
+# (ver manifests/prd/service.yaml). Em um cluster com mais recursos,
+# desligue o NodePort e aplique este Ingress normalmente.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: infoeste26-site
+  namespace: infoeste26
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: devfestinfoeste.duckdns.org
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: infoeste26-site
+                port:
+                  number: 80
