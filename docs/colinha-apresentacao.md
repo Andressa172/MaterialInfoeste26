@@ -9,7 +9,9 @@
 > `git pull` + `kubectl apply` a cada 20s — mesmo efeito prático (commit no Git muda o
 > cluster sozinho), com uma fração do consumo de memória. O manifesto real do ArgoCD
 > (`argocd/application.yaml`) fica no repositório como referência para quem for rodar
-> isso num cluster maior.
+> isso num cluster maior. Pelo mesmo motivo, o Traefik (Ingress Controller) também vem
+> desligado (`scripts/setup-vm.sh`) e a aplicação é exposta direto via Service
+> NodePort na porta 80 — sem Ingress no meio do caminho.
 
 ## 0. Antes de começar (preparação, fora do horário da palestra)
 
@@ -72,8 +74,7 @@ k get ns
 k get deployments -n infoeste26
 k get replicasets -n infoeste26
 k get pods -n infoeste26 -o wide
-k get svc -n infoeste26
-k get ingress -n infoeste26
+k get svc -n infoeste26   # repare no NodePort 80
 
 # Ver detalhes de um pod (imagem, porta, labels)
 k describe pod -n infoeste26 -l app=infoeste26-site
@@ -97,7 +98,13 @@ Mostre os pods novos subindo (`Pending` → `ContainerCreating` → `Running`) e
 Service já distribui o tráfego entre todos eles automaticamente (load balancing interno).
 Como a VM é pequena, não deixe mais que 4-5 réplicas de pé por muito tempo.
 
-Para voltar: `k scale deployment infoeste26-site -n infoeste26 --replicas=2`
+**Bônus didático:** espere ~20s e observe os pods voltando sozinhos pra 2 réplicas! O
+`gitops-poller` reaplica `manifests/prd/deployment.yaml` (que diz `replicas: 2`) a cada
+ciclo — é o mesmo comportamento de `selfHeal` do ArgoCD: mudança manual no cluster que
+diverge do Git é desfeita automaticamente. Ótimo gancho para reforçar o conceito de GitOps.
+
+Para escalar "de verdade" (sem o poller desfazer), mude `replicas` no
+`manifests/prd/deployment.yaml`, commite e dê `git push`.
 
 ## 3. O momento "mágico": trocar a cor para todo mundo ver
 
