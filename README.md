@@ -14,8 +14,8 @@ apresentada no **4º DevFest Presidente Prudente (GDG Presidente Prudente)** dur
 |---|---|
 | [`app/`](app) | Site de demonstração (HTML/CSS responsivo) usado ao vivo na palestra |
 | [`manifests/prd/`](manifests/prd) | Manifestos Kubernetes (Namespace, Deployment, Service, Ingress) |
-| [`argocd/`](argocd) | `Application` do ArgoCD, fazendo GitOps a partir da branch `master` |
-| [`scripts/`](scripts) | Scripts para instalar o cluster, atualizar o DuckDNS e publicar novas imagens |
+| [`argocd/`](argocd) | `Application` do ArgoCD (referência) — na demo, o GitOps real é feito pelo `gitops-poller` |
+| [`scripts/`](scripts) | Scripts para instalar o cluster, o GitOps leve, atualizar o DuckDNS e publicar novas imagens |
 | [`docs/`](docs) | Roteiro do curso, colinha de comandos ao vivo, links úteis e perguntas do Kahoot |
 
 ## Arquitetura da demo
@@ -33,7 +33,7 @@ Plateia (celular/notebook)
   Service infoeste26-site  ──►  Pods (ReplicaSet gerenciado pelo Deployment)
 ```
 
-### Fluxo GitOps (ArgoCD)
+### Fluxo GitOps
 
 ```
 Dev edita manifests/prd/*.yaml (ex: nova tag de imagem)
@@ -42,19 +42,27 @@ Dev edita manifests/prd/*.yaml (ex: nova tag de imagem)
    git push na branch master  ──►  GitHub (este repositório)
         │
         ▼
-  ArgoCD (rodando no cluster, dentro da VM) observa o repositório/branch
+  Algo dentro do cluster observa o repositório/branch
         │
         ▼
   Detecta divergência e aplica (sync) os manifestos no cluster automaticamente
 ```
 
+Em um cluster com recursos de sobra, esse "algo" é o **ArgoCD** (`argocd/application.yaml`).
+Na VM Always Free usada nesta demo (1GB de RAM), o ArgoCD completo não roda de forma
+estável, então quem cumpre esse papel é o `scripts/gitops-poller.sh`: um systemd timer
+que faz `git pull` + `kubectl apply` a cada 20s — mesmo conceito de GitOps, pegada leve.
+
 ## Como reproduzir em casa
 
-1. Suba uma VM gratuita (Oracle Cloud Always Free, por exemplo).
-2. Rode `scripts/setup-vm.sh` dentro da VM para instalar k3s + ArgoCD.
+1. Suba uma VM gratuita (Oracle Cloud Always Free, por exemplo — prefira um shape com
+   pelo menos 2-4GB de RAM se quiser rodar o ArgoCD completo).
+2. Rode `scripts/setup-vm.sh` dentro da VM para instalar Docker + k3s.
 3. Crie uma conta gratuita no [DuckDNS](https://www.duckdns.org) e aponte um subdomínio para o IP da VM (`scripts/duckdns-update.sh`).
-4. Publique sua própria imagem (`scripts/build-and-push.sh`) em um registro de containers (Docker Hub, por exemplo).
-5. Ajuste `manifests/prd/deployment.yaml` e `argocd/application.yaml` com seus dados e aplique a `Application` do ArgoCD no cluster.
+4. Gere e importe sua imagem direto no cluster com `scripts/vm-release.sh` (não precisa de Docker Hub).
+5. Para GitOps automático, escolha um caminho:
+   - VM com recursos de sobra: ajuste `argocd/application.yaml` com seus dados e aplique no cluster.
+   - VM pequena (como a desta demo): rode `scripts/install-gitops-poller.sh` dentro dela.
 
 Veja o passo a passo completo em [`docs/colinha-apresentacao.md`](docs/colinha-apresentacao.md).
 

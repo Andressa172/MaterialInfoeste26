@@ -1,7 +1,14 @@
 #!/usr/bin/env bash
-# Roda DENTRO da VM Ubuntu da OCI. Instala k3s (Kubernetes leve, já vem com
-# Traefik como Ingress Controller) e o ArgoCD.
+# Roda DENTRO da VM Ubuntu da OCI. Instala Docker (pra buildar a imagem do
+# site), k3s (Kubernetes leve, já vem com Traefik como Ingress Controller)
+# e o ArgoCD.
 set -euo pipefail
+
+echo "==> Instalando Docker..."
+if ! command -v docker >/dev/null; then
+  curl -fsSL https://get.docker.com | sudo sh
+  sudo usermod -aG docker "$(whoami)"
+fi
 
 echo "==> Instalando k3s..."
 curl -sfL https://get.k3s.io | sh -

@@ -1,6 +1,11 @@
 # Workload: Deployment -> gerencia um ReplicaSet -> gerencia os Pods.
 # Trocar a tag da imagem aqui (e dar git push) é o gatilho do GitOps: o ArgoCD
 # detecta a mudança neste arquivo e aplica no cluster automaticamente.
+#
+# A imagem é buildada e importada direto no containerd do nó (scripts/vm-release.sh),
+# sem depender de nenhum registry externo (Docker Hub, GHCR etc). Por isso
+# imagePullPolicy é "Never": o k3s nunca tenta puxar de fora, só usa o que já
+# foi importado localmente.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -20,8 +25,8 @@ spec:
     spec:
       containers:
         - name: site
-          # TODO: troque SEU_USUARIO_DOCKERHUB pelo seu usuário do Docker Hub (ou GHCR)
-          image: SEU_USUARIO_DOCKERHUB/infoeste26-site:v1
+          image: infoeste26-site:v1
+          imagePullPolicy: Never
           ports:
             - containerPort: 80
           resources:

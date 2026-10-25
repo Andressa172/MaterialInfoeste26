@@ -1,5 +1,12 @@
 # GitOps: o ArgoCD fica "olhando" este repositório (branch master, pasta manifests/prd).
 # Qualquer commit nessa pasta é detectado e sincronizado automaticamente no cluster.
+#
+# NOTA: este é o manifesto "de livro-texto" do ArgoCD, pra referência e pra explicar
+# o conceito na palestra. Na VM usada na demo (1GB de RAM) o ArgoCD completo não roda
+# de forma estável, então o deploy ao vivo usa scripts/gitops-poller.sh (um
+# systemd timer que faz git pull + kubectl apply a cada 20s) como substituto leve.
+# Em um cluster com mais recursos, aplique este arquivo normalmente:
+#   kubectl apply -n argocd -f argocd/application.yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:

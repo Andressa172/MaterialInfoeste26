@@ -114,7 +114,13 @@
   push` — uma ferramenta (ArgoCD) garante que o cluster fica igual ao repositório.
 - **ArgoCD na prática:** fica dentro do cluster observando um repositório/branch (no
   nosso caso, `master`, pasta `manifests/prd`). Toda mudança commitada é detectada e
-  sincronizada automaticamente (`syncPolicy.automated` com `selfHeal`).
+  sincronizada automaticamente (`syncPolicy.automated` com `selfHeal`). Mostre o
+  manifesto `argocd/application.yaml` do repositório como referência.
+- Nota transparente para a plateia: na VM gratuita usada na demo (1GB de RAM) o ArgoCD
+  completo não cabe de forma estável, então quem está rodando ao vivo é um "GitOps
+  caseiro" (`scripts/gitops-poller.sh`, um systemd timer com `git pull` + `kubectl
+  apply` a cada 20s) — mesmo conceito, versão enxuta. Ótimo gancho para falar sobre
+  dimensionamento de recursos em produção.
 - Mostrar o diagrama do fluxo GitOps (README.md do repositório).
 - **Ingress:** a porta de entrada HTTP/HTTPS do cluster — mapeia um domínio (host) para
   um Service interno. No k3s usamos o **Traefik**, que já vem instalado por padrão.
@@ -133,9 +139,10 @@ Seguir à risca o [`docs/colinha-apresentacao.md`](colinha-apresentacao.md):
 2. Pedir para a plateia acessar `http://devfestinfoeste.duckdns.org` pelo celular/notebook.
 3. Escalonar o Deployment ao vivo (`kubectl scale ... --replicas=5`) e mostrar os Pods
    subindo em tempo real.
-4. O momento "mágico": trocar uma cor no código, gerar uma nova imagem Docker, subir
-   para o Docker Hub, atualizar o manifesto e dar `git push` — o ArgoCD sincroniza
-   sozinho e a cor muda para todo mundo que estiver com a página aberta.
+4. O momento "mágico": trocar uma cor no código, gerar uma nova imagem (build + import
+   direto no cluster, via `scripts/vm-release.sh`), atualizar o manifesto e dar
+   `git push` — o `gitops-poller` sincroniza sozinho em até 20s e a cor muda para todo
+   mundo que estiver com a página aberta.
 
 ## 10. Kahoot e encerramento (22h10 – 22h30 · 20min)
 
